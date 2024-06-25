@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "benchlinginventory"
+version = "0.1.0"
+description = ""
+authors = ["catherinegomes <cgomestx@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+benchling-sdk = "^1.13.0"
+click = "^8.1.7"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+flake8 = "^7.0.0"
+pytest = "^8.2.2"
+pre-commit = "^3.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
