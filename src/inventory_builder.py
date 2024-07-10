@@ -48,7 +48,7 @@ def write_shelves(shelves: int, parent_barcode: str) -> tuple[List[str], List[st
 
 def write_racks(
     shelves: int, rack_prefix: str, rack_in_full: str, racks: int, parent_barcode: str, shelf_barcodes: list[str]
-) -> tuple[list[str], list[str]]:
+) -> tuple[List[str], List[str]]:
     location_barcodes = ["Location Barcode"]
     rack_barcodes = ["Barcode"]
     rack_names = ["Name"]
@@ -76,26 +76,17 @@ def write_racks(
 
 
 def write_drawers(
-    racks: int, drawers: int, shelves: int, rack_barcodes: list[str], drawer_prefix: str, drawer_in_full: str
+    rack_barcodes: List[str], drawers: int
 ) -> tuple[List[str], List[str]]:
     location_barcodes = ["Location Barcode"]
     drawer_barcodes = ["Barcode"]
     drawer_names = ["Name"]
     
-
-    if shelves != 0:
-        for _ in range(1, shelves + 1):
-            for r_count in range(1, racks +1):
-                for d_count in range(1, drawers + 1):
-                    location_barcodes.append(rack_barcodes[r_count])
-                    drawer_barcodes.append(f"{rack_barcodes[r_count]}-{drawer_prefix}{d_count}")
-                    drawer_names.append(f"{drawer_in_full} {d_count}")
-    else:
-        for r_count in range(1, racks + 1):
-            for d_count in range(1, drawers + 1):
-                location_barcodes.append(rack_barcodes[r_count])
-                drawer_barcodes.append(f"{rack_barcodes[r_count]}-{drawer_prefix}{d_count}")
-                drawer_names.append(f"{drawer_in_full} {d_count}")
+    for e in rack_barcodes[1:]:
+        for i in range(1, drawers + 1):
+            location_barcodes.append(e)
+            drawer_barcodes.append(f"{e}-D{i}")
+            drawer_names.append(f"Drawer {i}")
 
     write_to_csv(
         mode="a",
@@ -107,13 +98,12 @@ def write_drawers(
     return drawer_barcodes, drawer_names
 
 
-def write_boxes(boxes: int, drawer_barcodes: list[str]) -> list[str]:
+def write_boxes(boxes: int, barcodes: List[str]) -> List[str]:
     location_barcodes = ["Location Barcode"]
     box_names = ["Name"]
 
-    # TODO: review this
-    for d in range(1, len(drawer_barcodes)):
-        location_barcodes.extend([drawer_barcodes[d]] * boxes)
+    for e in range(1, len(barcodes)):
+        location_barcodes.extend([barcodes[e]] * boxes)
         box_names.extend([f"Box {b_count}" for b_count in range(1, boxes + 1)])
 
     write_to_csv(
@@ -165,13 +155,10 @@ def post_child_location(
             names = names[1:]
 
             for e in range(len(barcodes)):
-                # TODO: RM try/except. fails when all Drawers have already been created
-                try:
-                    r = benchling_client.locations.create(location=benchling_models.LocationCreate(
-                        name=names[e], schema_id=location_schema, barcode=barcodes[e], parent_storage_id=parent_storage_ids[e]
-                    ))
-                except:
-                    pass
+
+                r = benchling_client.locations.create(location=benchling_models.LocationCreate(
+                    name=names[e], schema_id=location_schema, barcode=barcodes[e], parent_storage_id=parent_storage_ids[e]
+                ))
 
                 storage_ids.append(r.id)
     return storage_ids
@@ -234,7 +221,7 @@ def main():
 
     # Create drawers within racks/canes
     if drawers != 0:
-        drawer_barcodes, drawer_names = write_drawers(racks, drawers, shelves, rack_barcodes, drawer_prefix, drawer_in_full)
+        drawer_barcodes, drawer_names = write_drawers(rack_barcodes, drawers)
         drawer_storage_ids = post_child_location(drawer_barcodes, drawer_names, parent_storage_id=rack_storage_ids, location_schema=drawer_schema)
 
         # Create boxes within drawers
