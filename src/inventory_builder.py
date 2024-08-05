@@ -1,45 +1,49 @@
 import csv
 from typing import List, Literal
 
-from benchling_sdk.benchling import Benchling
-from benchling_sdk.auth.client_credentials_oauth2 import ClientCredentialsOAuth2
-from benchling_sdk import models as benchling_models
-
-import config
 import log
-import src.settings as settings
+from benchling_sdk import models as benchling_models
+from benchling_sdk.auth.client_credentials_oauth2 import ClientCredentialsOAuth2
+from benchling_sdk.benchling import Benchling
+
+from src import models
+from src import secrets_manager
+from src import settings
+
 
 logger = log.logger()
 
 
 def write_to_csv(
-    mode: Literal["w+", "a"],
+    mode: Literal['w+', 'a'],
     location_barcodes: List[str],
     barcodes: List[str],
     names: List[str],
 ) -> None:
-    with open("inventory_locations.csv", mode, newline="") as f:
+    with open('inventory_locations.csv', mode, newline='') as f:
         writer = csv.writer(f)
         writer.writerows(zip(location_barcodes, barcodes, names))
 
 
-def write_shelves(shelves: int, parent_barcode: str) -> tuple[List[str], List[str]]:
-    logger.info("initiated")
+def write_shelves(shelves: int, parent_barcode: str) -> models.Location:
+    "Write custom Shelf names and barcodes to csv"
+    logger.info('initiated')
 
-    location_barcodes = ["Location Barcode"] + [parent_barcode] * shelves
-    shelf_barcodes = ["Barcode"] + [
+    location_barcodes = ['Location Barcode'] + [parent_barcode] * shelves
+    shelf_barcodes = ['Barcode'] + [
         f"{parent_barcode}-S{count}" for count in range(1, shelves + 1)
     ]
-    shelf_names = ["Name"] + [f"Shelf {count}" for count in range(1, shelves + 1)]
+    shelf_names = ['Name'] + \
+        [f"Shelf {count}" for count in range(1, shelves + 1)]
 
     write_to_csv(
-        mode="w+",
+        mode='w+',
         location_barcodes=location_barcodes,
         barcodes=shelf_barcodes,
         names=shelf_names,
     )
 
-    return shelf_barcodes, shelf_names
+    return models.Location(barcodes=shelf_barcodes, names=shelf_names)
 
 
 def write_racks(
@@ -48,20 +52,21 @@ def write_racks(
     rack_in_full: str,
     racks: int,
     parent_barcode: str,
-    shelf_barcodes: list[str],
-) -> tuple[List[str], List[str]]:
-    logger.info("initiated")
+    shelf_barcodes: List[str],
+) -> models.Location:
+    "Write custom [ Rack | Cane ] names and barcodes to csv"
+    logger.info('initiated')
 
-    location_barcodes = ["Location Barcode"]
-    rack_barcodes = ["Barcode"]
-    rack_names = ["Name"]
+    location_barcodes = ['Location Barcode']
+    rack_barcodes = ['Barcode']
+    rack_names = ['Name']
 
     if shelves != 0 and shelf_barcodes:
         for s_count in range(1, shelves + 1):
             for r_count in range(1, racks + 1):
                 location_barcodes.append(shelf_barcodes[s_count])
                 rack_barcodes.append(
-                    f"{parent_barcode}-S{s_count}-{rack_prefix}{r_count}"
+                    f"{parent_barcode}-S{s_count}-{rack_prefix}{r_count}",
                 )
                 rack_names.append(f"{rack_in_full} {r_count}")
     else:
@@ -71,70 +76,76 @@ def write_racks(
             rack_names.append(f"{rack_in_full} {r_count}")
 
     write_to_csv(
-        mode="a",
+        mode='a',
         location_barcodes=location_barcodes,
         barcodes=rack_barcodes,
         names=rack_names,
     )
 
-    return rack_barcodes, rack_names
+    return models.Location(barcodes=rack_barcodes, names=rack_names)
 
 
-def write_drawers(
-    rack_barcodes: List[str], drawers: int
-) -> tuple[List[str], List[str]]:
-    logger.info("initiated")
+def write_drawers_or_rows(
+    rack_barcodes: List[str], prefix: str, name_in_full: str, drawers: int,
+) -> models.Location:
+    "Write custom [ Drawer | Row ] names and barcodes to csv"
+    logger.info('initiated')
 
-    location_barcodes = ["Location Barcode"]
-    drawer_barcodes = ["Barcode"]
-    drawer_names = ["Name"]
+    location_barcodes = ['Location Barcode']
+    barcodes = ['Barcode']
+    names = ['Name']
 
     for e in rack_barcodes[1:]:
         for i in range(1, drawers + 1):
             location_barcodes.append(e)
-            drawer_barcodes.append(f"{e}-D{i}")
-            drawer_names.append(f"Drawer {i}")
+            barcodes.append(f"{e}-{prefix}{i}")
+            names.append(f"{name_in_full} {i}")
 
     write_to_csv(
-        mode="a",
+        mode='a',
         location_barcodes=location_barcodes,
-        barcodes=drawer_barcodes,
-        names=drawer_names,
+        barcodes=barcodes,
+        names=names,
     )
 
-    return drawer_barcodes, drawer_names
+    return models.Location(barcodes=barcodes, names=names)
 
 
 def write_boxes(boxes: int, barcodes: List[str]) -> List[str]:
-    logger.info("initiated")
+    "Write Box names [Box 1, Box 2, Box 3...] to csv."
+    logger.info('initiated')
 
-    location_barcodes = ["Location Barcode"]
-    box_names = ["Name"]
+    location_barcodes = ['Location Barcode']
+    box_names = ['Name']
 
     for e in range(1, len(barcodes)):
         location_barcodes.extend([barcodes[e]] * boxes)
         box_names.extend([f"Box {b_count}" for b_count in range(1, boxes + 1)])
 
-    write_to_csv(mode="a", location_barcodes=location_barcodes, names=box_names)
+    write_to_csv(
+        mode='a', location_barcodes=location_barcodes,
+        names=box_names,
+    )
 
     return box_names
 
 
 def post_parent_location(
-    parent_barcode: str, parent_name: str, location_schema: str
+    parent_barcode: str, parent_name: str, location_schema: str,
 ) -> str:
-    logger.info("initiated")
+    "POST request to create storage location with custom barcode"
+    logger.info('initiated')
 
     r = benchling_client.locations.create(
         location=benchling_models.LocationCreate(
-            name=parent_name, schema_id=location_schema, barcode=parent_barcode
-        )
+            name=parent_name, schema_id=location_schema, barcode=parent_barcode,
+        ),
     )
     return [r.id]
 
 
 def extend_list(barcodes: List[str], parent_storage_id: List[str]) -> List[str]:
-    logger.info("initiated")
+    logger.info('initiated')
 
     fold = (len(barcodes) - 1) // len(parent_storage_id)
     return [e for e in parent_storage_id for _ in range(fold)]
@@ -146,7 +157,8 @@ def post_child_location(
     parent_storage_id: List[str],
     location_schema: str,
 ) -> List[str]:
-    logger.info("initiated")
+    "POST request to create interior locations with custom barcodes"
+    logger.info('initiated')
 
     storage_ids = []
 
@@ -158,7 +170,7 @@ def post_child_location(
                     schema_id=location_schema,
                     barcode=barcodes[e + 1],
                     parent_storage_id=parent_storage_id[0],
-                )
+                ),
             )
             storage_ids.append(r.id)
 
@@ -176,7 +188,7 @@ def post_child_location(
                         schema_id=location_schema,
                         barcode=barcodes[e],
                         parent_storage_id=parent_storage_ids[e],
-                    )
+                    ),
                 )
 
                 storage_ids.append(r.id)
@@ -184,9 +196,10 @@ def post_child_location(
 
 
 def post_box(
-    box_names: List[str], parent_storage_id: List[str], dimension_id: str
+    box_names: List[str], parent_storage_id: List[str], schema: str,
 ) -> None:
-    logger.info("initiated")
+    "POST request to create boxes with autogenerated barcodes"
+    logger.info('initiated')
 
     if len(parent_storage_id) < len(box_names):
         parent_storage_ids = extend_list(box_names, parent_storage_id)
@@ -199,9 +212,9 @@ def post_box(
         benchling_client.boxes.create(
             box=benchling_models.BoxCreate(
                 name=box_names[e],
-                schema_id=dimension_id,
+                schema_id=schema,
                 parent_storage_id=parent_storage_ids[e - 1],
-            )
+            ),
         )
 
         count += 1
@@ -213,99 +226,87 @@ def main():
 
     # Create parent_location
     top_parent_storage_id = post_parent_location(
-        parent_barcode=parent_barcode,
-        parent_name=parent_name,
-        location_schema=freezer_schema,
+        parent_barcode=storage.parent_barcode,
+        parent_name=storage.parent_name,
+        location_schema=parameters.freezer_schema,
     )
 
     # Create shelves & racks within parent location
-    if shelves != 0:
-        shelf_barcodes, shelf_names = write_shelves(shelves, parent_barcode)
-        rack_barcodes, rack_names = write_racks(
-            shelves, rack_prefix, rack_in_full, racks, parent_barcode, shelf_barcodes
+    if storage.shelves != 0:
+        shelf = write_shelves(storage.shelves, storage.parent_barcode)
+        rack = write_racks(
+            storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf.barcodes
         )
 
         # create (shelf) child locations
         shelf_storage_ids = post_child_location(
-            shelf_barcodes,
-            shelf_names,
+            shelf.barcodes,
+            shelf.names,
             parent_storage_id=top_parent_storage_id,
-            location_schema=shelf_schema,
+            location_schema=parameters.shelf_schema,
         )
 
         rack_storage_ids = post_child_location(
-            rack_barcodes,
-            rack_names,
+            rack.barcodes,
+            rack.names,
             parent_storage_id=shelf_storage_ids,
-            location_schema=rack_schema,
+            location_schema=parameters.rack_schema,
         )
 
     # Create racks within parent
     else:
-        rack_barcodes, rack_names = write_racks(
-            shelves, rack_prefix, rack_in_full, racks, parent_barcode, shelf_barcodes=0
+        rack = write_racks(
+            storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf_barcodes=0,
         )
         rack_storage_ids = post_child_location(
-            rack_barcodes,
-            rack_names,
+            rack.barcodes,
+            rack.names,
             parent_storage_id=top_parent_storage_id,
-            location_schema=rack_schema,
+            location_schema=parameters.rack_schema,
         )
 
     # Create drawers within racks/canes
-    if drawers != 0:
-        drawer_barcodes, drawer_names = write_drawers(rack_barcodes, drawers)
+    if storage.drawers != 0:
+        drawer = write_drawers_or_rows(rack.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, drawers)
         drawer_storage_ids = post_child_location(
-            drawer_barcodes,
-            drawer_names,
+            drawer.barcodes,
+            drawer.names,
             parent_storage_id=rack_storage_ids,
-            location_schema=drawer_schema,
+            location_schema=parameters.drawer_schema,
         )
 
         # Create boxes within drawers
-        boxes_names = write_boxes(boxes, drawer_barcodes)
+        boxes_names = write_boxes(storage.boxes, drawer.barcodes)
         post_box(
             box_names=boxes_names,
             parent_storage_id=drawer_storage_ids,
-            dimension_id=dimension_id,
+            schema=box_schema,
         )
 
     # Create boxes within racks/canes for LN2 configuration
     else:
-        boxes_names = write_boxes(boxes, rack_barcodes)
+        boxes_names = write_boxes(storage.boxes, rack.barcodes)
         post_box(
             box_names=boxes_names,
             parent_storage_id=rack_storage_ids,
-            dimension_id=dimension_id,
+            schema=box_schema,
         )
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 
-    instance, freezer_schema, shelf_schema, rack_schema, drawer_schema = (
-        settings.env_variables()
-    )
+    parameters = settings.env_variables()
+
+    secret = secrets_manager.get_secret(secret_name=parameters.secret_name)
 
     benchling_client = Benchling(
-        url=f"https://org.benchling.com",
+        url=f"https://{parameters.tenant}.benchling.com",
         auth_method=ClientCredentialsOAuth2(
-            client_id=config.CLIENT_ID, client_secret=config.CLIENT_SECRET
+            client_id=secret['client_id'], client_secret=secret['client_secret'],
         ),
     )
 
-    (
-        parent_barcode,
-        parent_name,
-        shelves,
-        rack_prefix,
-        rack_in_full,
-        racks,
-        drawer_prefix,
-        drawer_in_full,
-        drawers,
-        boxes,
-        n_dimension,
-    ) = settings.collect_input.main(standalone_mode=False)
-    dimension_id = settings.box_schema_id(n_dimension, instance)
+    storage = settings.collect_input.main(standalone_mode=False)
+    box_schema = settings.box_schema_id(storage.box_dimension, parameters.tenant)
 
     main()
