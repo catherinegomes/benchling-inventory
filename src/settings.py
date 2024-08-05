@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class BaseSettings(BaseModel):
-    instance: Literal = ['orgdev', 'orgtest', 'org']
+    tenant: Literal = ['orgdev', 'orgtest', 'org']
     freezer_schema: str
     shelf_schema: str
     rack_schema: str
@@ -15,7 +15,7 @@ class BaseSettings(BaseModel):
 
 
 class DevelopmentSettings(BaseSettings):
-    instance = 'orgdev'
+    tenant = 'orgdev'
     freezer_schema = ''
     shelf_schema = ''
     rack_schema = ''
@@ -23,7 +23,7 @@ class DevelopmentSettings(BaseSettings):
 
 
 class TestSettings(BaseSettings):
-    instance = 'orgtest'
+    tenant = 'orgtest'
     freezer_schema = ''
     shelf_schema = ''
     rack_schema = ''
@@ -31,7 +31,7 @@ class TestSettings(BaseSettings):
 
 
 class ProductionSettings(BaseSettings):
-    instance = 'org'
+    tenant = 'org'
     freezer_schema = ''
     shelf_schema = ''
     rack_schema = ''
@@ -53,7 +53,18 @@ class StorageConfig(BaseModel):
 
 
 def env_variables() -> Any:
-    """Based on user input, return env variables to prepare storage configuration."""
+    """Based on user input, return env variables to prepare storage configuration.
+    
+    returns: 
+        DevelopmentSettings, TestSettings or Production Settings(
+            tenant = 'orgdev'
+            freezer_schema = ''
+            shelf_schema = ''
+            rack_schema = ''
+            drawer_schema = ''
+            secret_name = ''
+        )
+    """
 
     instance = None
 
@@ -83,8 +94,24 @@ def env_variables() -> Any:
     prompt='Using Drawers or Rows? ',
     type=click.Choice(['Drawers', 'Rows', 'Neither'], case_sensitive=False),
 )
-def collect_input(racks_prompt, drawers_prompt) -> Any:
-    """Based on user and implementation needs, sets up the required storage configuration"""
+def collect_input(racks_prompt, drawers_prompt) -> StorageConfig:
+    """Based on user and implementation needs, sets up the required storage configuration
+    
+    returns: 
+        StorageConfig(
+            parent_barcode: str,
+            parent_name: str,
+            shelves: int,
+            rack_prefix: str,
+            rack_in_full: str,
+            racks: int,
+            drawer_prefix: str,
+            drawer_in_full: str,
+            drawers: int,
+            boxes: int,
+            box_dimension: int,
+        )
+    """
     confirm_1 = False
     confirm_2 = False
 
@@ -162,26 +189,26 @@ def collect_input(racks_prompt, drawers_prompt) -> Any:
 
 
 def box_schema_id(
-    n_dimension: int, instance: Literal['orgdev', 'orgtest', 'org'],
+    n_dimension: int, tenant: Literal['orgdev', 'orgtest', 'org'],
 ) -> str:
     """Based on collect_input, return the schema_id for the box dimension and instance."""
 
-    if n_dimension == 1 and instance == 'orgdev':
-        dimension_id = 'boxsch_xyz789'  # 9x9 boxes
+    if n_dimension == 1 and tenant == 'orgdev':
+        schema = 'boxsch_xyz789'  # 9x9 boxes
 
-    elif n_dimension == 2 and instance == 'orgdev':
-        dimension_id = 'boxsch_xyz987'  # 10x10 boxes
+    elif n_dimension == 2 and tenant == 'orgdev':
+        schema = 'boxsch_xyz987'  # 10x10 boxes
 
-    elif n_dimension == 1 and instance == 'orgtest':
-        dimension_id = 'boxsch_xyz123'  # 9x9 boxes
+    elif n_dimension == 1 and tenant == 'orgtest':
+        schema = 'boxsch_xyz123'  # 9x9 boxes
 
-    elif n_dimension == 2 and instance == 'orgtest':
-        dimension_id = 'boxsch_xyz456'  # 10x10 boxes
+    elif n_dimension == 2 and tenant == 'orgtest':
+        schema = 'boxsch_xyz456'  # 10x10 boxes
 
-    elif n_dimension == 1 and instance == 'org':
-        dimension_id = 'boxsch_abc123'  # 9x9 boxes
+    elif n_dimension == 1 and tenant == 'org':
+        schema = 'boxsch_abc123'  # 9x9 boxes
 
-    elif n_dimension == 2 and instance == 'org':
-        dimension_id = 'boxsch_abc456'  # 10x10 boxes
+    elif n_dimension == 2 and tenant == 'org':
+        schema = 'boxsch_abc456'  # 10x10 boxes
 
-    return dimension_id
+    return schema
