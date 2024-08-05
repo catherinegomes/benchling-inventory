@@ -226,57 +226,57 @@ def main():
 
     # Create parent_location
     top_parent_storage_id = post_parent_location(
-        parent_barcode=storage_config.parent_barcode,
-        parent_name=storage_config.parent_name,
+        parent_barcode=storage.parent_barcode,
+        parent_name=storage.parent_name,
         location_schema=parameters.freezer_schema,
     )
 
     # Create shelves & racks within parent location
-    if storage_config.shelves != 0:
-        shelf_config = write_shelves(storage_config.shelves, storage_config.parent_barcode)
-        rack_config = write_racks(
-            storage_config.shelves, storage_config.rack_prefix, storage_config.rack_in_full, storage_config.racks, storage_config.parent_barcode, shelf_config.barcodes
+    if storage.shelves != 0:
+        shelf = write_shelves(storage.shelves, storage.parent_barcode)
+        rack = write_racks(
+            storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf.barcodes
         )
 
         # create (shelf) child locations
         shelf_storage_ids = post_child_location(
-            shelf_config.barcodes,
-            shelf_config.names,
+            shelf.barcodes,
+            shelf.names,
             parent_storage_id=top_parent_storage_id,
             location_schema=parameters.shelf_schema,
         )
 
         rack_storage_ids = post_child_location(
-            rack_config.barcodes,
-            rack_config.names,
+            rack.barcodes,
+            rack.names,
             parent_storage_id=shelf_storage_ids,
             location_schema=parameters.rack_schema,
         )
 
     # Create racks within parent
     else:
-        rack_config = write_racks(
-            storage_config.shelves, storage_config.rack_prefix, storage_config.rack_in_full, storage_config.racks, storage_config.parent_barcode, shelf_barcodes=0,
+        rack = write_racks(
+            storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf_barcodes=0,
         )
         rack_storage_ids = post_child_location(
-            rack_config.barcodes,
-            rack_config.names,
+            rack.barcodes,
+            rack.names,
             parent_storage_id=top_parent_storage_id,
             location_schema=parameters.rack_schema,
         )
 
     # Create drawers within racks/canes
-    if storage_config.drawers != 0:
-        drawer_config = write_drawers_or_rows(rack_config.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, drawers)
+    if storage.drawers != 0:
+        drawer = write_drawers_or_rows(rack.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, drawers)
         drawer_storage_ids = post_child_location(
-            drawer_config.barcodes,
-            drawer_config.names,
+            drawer.barcodes,
+            drawer.names,
             parent_storage_id=rack_storage_ids,
             location_schema=parameters.drawer_schema,
         )
 
         # Create boxes within drawers
-        boxes_names = write_boxes(storage_config.boxes, drawer_config.barcodes)
+        boxes_names = write_boxes(storage.boxes, drawer.barcodes)
         post_box(
             box_names=boxes_names,
             parent_storage_id=drawer_storage_ids,
@@ -285,7 +285,7 @@ def main():
 
     # Create boxes within racks/canes for LN2 configuration
     else:
-        boxes_names = write_boxes(storage_config.boxes, rack_config.barcodes)
+        boxes_names = write_boxes(storage.boxes, rack.barcodes)
         post_box(
             box_names=boxes_names,
             parent_storage_id=rack_storage_ids,
@@ -306,7 +306,7 @@ if __name__ == '__main__':
         ),
     )
 
-    storage_config = settings.collect_input.main(standalone_mode=False)
-    box_schema = settings.box_schema_id(storage_config.box_dimension, parameters.tenant)
+    storage = settings.collect_input.main(standalone_mode=False)
+    box_schema = settings.box_schema_id(storage.box_dimension, parameters.tenant)
 
     main()
