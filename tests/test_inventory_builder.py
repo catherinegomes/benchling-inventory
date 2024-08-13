@@ -1,7 +1,5 @@
 import pytest
 
-from src import inventory_builder
-
 
 @pytest.mark.unittest
 def test_write_shelves():
