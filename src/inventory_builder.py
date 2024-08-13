@@ -1,11 +1,11 @@
 import csv
 from typing import List, Literal
 
-import log
 from benchling_sdk import models as benchling_models
 from benchling_sdk.auth.client_credentials_oauth2 import ClientCredentialsOAuth2
 from benchling_sdk.benchling import Benchling
 
+from src import log
 from src import models
 from src import secrets_manager
 from src import settings
