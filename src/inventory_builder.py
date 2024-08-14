@@ -17,8 +17,8 @@ logger = log.logger()
 def write_to_csv(
     mode: Literal['w+', 'a'],
     location_barcodes: List[str],
-    barcodes: List[str],
     names: List[str],
+    **barcodes: List[str],
 ) -> None:
     with open('inventory_locations.csv', mode, newline='') as f:
         writer = csv.writer(f)
