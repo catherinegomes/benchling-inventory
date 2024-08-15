@@ -5,6 +5,7 @@ CLI tool to create storage hierarchy for sample inventory management via UI uplo
 ## Background
 
 Configuration of storage hierarchy is time-consuming and error prone. This solution aims to provide admins and integration specialists a csv output for upload via UI or automated API integration.
+Functions beginning with "write" will generate a CSV output and functions beginning with "post" are for API requests.
 
 ## Assumptions
 
@@ -68,6 +69,13 @@ python = "^3.12"
 
 [Pytest](https://docs.pytest.org/en/8.2.x/) is the testing framework for running unit tests
 
+```bash
+pytest tests
+```
+
+## Authentication
+
+A Benchling App is used to authenticate with the API. App must be configured and have the appropriate project and inventory permissions to write. See [Getting Started with Benchling Apps](https://docs.benchling.com/docs/getting-started-benchling-apps).
 
 # References
 
