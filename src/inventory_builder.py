@@ -270,7 +270,7 @@ def main():
     # Create drawers within racks/canes
     if storage.drawers != 0:
         drawer = write_drawers_or_rows(
-            rack.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, drawers)
+            rack.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, storage.drawers)
         drawer_storage_ids = post_child_location(
             drawer.barcodes,
             drawer.names,
