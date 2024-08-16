@@ -165,3 +165,4 @@ scratch*
 scrap*
 .DS_Store
 config.py
+*.csv
