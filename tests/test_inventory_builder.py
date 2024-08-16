@@ -1,24 +1,11 @@
 import pytest
 
 from unittest import mock
+from unittest.mock import MagicMock
+from benchling_sdk import models as benchling_models
 
 from src import inventory_builder
 from src import models
-
-
-@pytest.fixture(scope='session')
-def test_benchling_client():
-    benchling_client = {
-        "url": "DUMMY_URL",
-        "client_id": "DUMMY_ID",
-        "client_secret": "DUMMY_SECRET"
-    }
-    
-    def my_client_func(*args, **kwargs):
-        return benchling_client
-
-    with mock.patch('src.inventory_builder.benchling_client', my_client_func):
-        yield my_client_func
 
 
 @pytest.mark.unittest
@@ -180,7 +167,20 @@ def test_write_boxes():
 
 @pytest.mark.unittest
 def test_post_parent_location():
-    pass
+    mock_benchling_client = MagicMock()
+    mock_location_create = MagicMock()
+    mock_benchling_client.locations.create.return_value = mock_location_create
+    
+    with mock.patch("inventory_builder.create_session", mock_benchling_client):
+    
+        inventory_builder.post_parent_location(
+            parent_barcode="EQS-1234",
+            parent_name="FREEZER_NAME",
+            location_schema="dev_freezer_schema",
+            benchling_client=mock_benchling_client
+        )
+
+        assert mock_benchling_client.locations.create.call_count == 1
 
 
 @pytest.mark.unittest
@@ -208,9 +208,58 @@ def test_extend_list():
 
 @pytest.mark.unittest
 def test_post_child_location():
-    pass
+
+    mock_benchling_client = MagicMock()
+    mock_location_create = MagicMock()
+    mock_benchling_client.locations.create.return_value = mock_location_create
+    
+    with mock.patch("inventory_builder.create_session", mock_benchling_client):
+    
+        inventory_builder.post_child_location(
+            barcodes=[
+                "Barcode",
+                "EQS-1234-S1-R1-D1",
+                "EQS-1234-S1-R1-D2",
+                "EQS-1234-S1-R1-D3"
+            ],
+            names=[
+                "Name",
+                "Drawer 1",
+                "Drawer 2",
+                "Drawer 3",
+            ],
+            parent_storage_id=["dev_rack_id"],
+            location_schema="dev_rack_schema",
+            benchling_client=mock_benchling_client
+        )
+        assert mock_benchling_client.locations.create.call_count == 3
 
 
 @pytest.mark.unittest
-def test_post_box():
-    pass
+def test_post_box(capsys):
+
+    mock_benchling_client = MagicMock()
+    
+    with mock.patch("inventory_builder.create_session", mock_benchling_client):
+
+        inventory_builder.post_box(
+            box_names=["Name", "Box 1", "Box 2", "Box 3"],
+            parent_storage_id=["dev_rack_id"],
+            schema="boxsch_xyz789",
+            benchling_client=mock_benchling_client
+        )
+
+        assert mock_benchling_client.boxes.create.call_count == 3
+    
+        for i in range(2, 4):
+            mock_benchling_client.boxes.create.assert_any_call(
+                box=benchling_models.BoxCreate(
+                    name=f"Box {i}",
+                    schema_id="boxsch_xyz789",
+                    parent_storage_id="dev_rack_id",
+                )
+            )
+
+    expected_output = "3 of 3 boxes successfully created"
+    captured_output = capsys.readouterr()
+    assert expected_output in captured_output.out
