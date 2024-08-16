@@ -320,7 +320,7 @@ if __name__ == '__main__':
 
     parameters = settings.env_variables()
 
-    secret = secrets_manager.get_secret(secret_name=parameters.secret_name)
+    secret = secrets_manager.get_secret(secret_name=parameters.secret)
 
     benchling_client = create_session(tenant=parameters.tenant, auth=secret)
 

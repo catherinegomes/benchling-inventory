@@ -1,5 +1,5 @@
 from typing import Any
-from typing import Literal
+from typing import Literal, Union
 
 import click
 from pydantic import BaseModel, field_validator
@@ -11,6 +11,7 @@ class DevelopmentSettings(BaseModel):
     shelf_schema: str = "dev_shelf_schema"
     rack_schema: str = "dev_rack_schema"
     drawer_schema: str = "dev_drawer_schema"
+    secret: str = "benchling-inventory"
 
 
 class TestSettings(BaseModel):
@@ -19,6 +20,7 @@ class TestSettings(BaseModel):
     shelf_schema: str = "test_shelf_schema"
     rack_schema: str = "test_rack_schema"
     drawer_schema: str = "test_drawer_schema"
+    secret: str = "benchling-inventory"
 
 
 class ProductionSettings(BaseModel):
@@ -27,6 +29,7 @@ class ProductionSettings(BaseModel):
     shelf_schema: str = "prod_shelf_schema"
     rack_schema: str = "prod_rack_schema"
     drawer_schema: str = "prod_drawer_schema"
+    secret: str = "benchling-inventory"
 
 
 class StorageConfig(BaseModel):
@@ -51,7 +54,7 @@ class StorageConfig(BaseModel):
         return value
 
 
-def env_variables() -> Any:
+def env_variables() -> Union[DevelopmentSettings, TestSettings, ProductionSettings]:
     """Based on user input, return env variables to prepare storage configuration.
 
     returns:
@@ -61,7 +64,7 @@ def env_variables() -> Any:
             shelf_schema = ''
             rack_schema = ''
             drawer_schema = ''
-            secret_name = ''
+            secret = ''
         )
     """
 
