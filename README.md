@@ -9,6 +9,12 @@ Functions beginning with "write" will generate a CSV output and functions beginn
 
 # Usage
 
+## Authentication
+
+A Benchling App is used to authenticate with the API. App must be configured and have the appropriate project and inventory permissions to write. See [Getting Started with Benchling Apps](https://docs.benchling.com/docs/getting-started-benchling-apps).
+
+[boto3](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html) is used to retrieve secret from AWS Secrets Manager. Assumes secret is already configured and role has IAM permissions to retrieve secret at runtime.
+
 ## Assumptions
 
 1. Supports a parent location schema (i.e. Upright Freezer or Liquid Nitrogen Freezer) with asset number from user input
@@ -143,10 +149,6 @@ python = "^3.12"
 ```bash
 pytest tests
 ```
-
-## Authentication
-
-A Benchling App is used to authenticate with the API. App must be configured and have the appropriate project and inventory permissions to write. See [Getting Started with Benchling Apps](https://docs.benchling.com/docs/getting-started-benchling-apps).
 
 # References
 
