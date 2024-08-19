@@ -72,7 +72,7 @@ def env_variables() -> Union[DevelopmentSettings, TestSettings, ProductionSettin
 
     while instance is None:
         instance = click.prompt(
-            "\nSpecify the instance: ",
+            "\nSpecify the instance",
             type=click.Choice(["dev", "test", "prod"], case_sensitive=False),
         )
 
