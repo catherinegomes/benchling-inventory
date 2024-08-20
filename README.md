@@ -136,7 +136,7 @@ poetry shell
 
 ```bash
 benchling-sdk = "^1.13.0"
-boto3 = "^1.35.0"
+boto3 = "^1.35.1"
 click = "^8.1.7"
 pydantic = "^2.8.2"
 python = "^3.12"
