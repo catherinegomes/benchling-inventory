@@ -250,13 +250,18 @@ def main():
     if storage.shelves != 0:
         shelf = write_shelves(storage.shelves, storage.parent_barcode)
         rack = write_racks_or_canes(
-            storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf.barcodes,
+            shelves=storage.shelves,
+            rack_prefix=storage.rack_prefix,
+            rack_in_full=storage.rack_in_full,
+            racks=storage.racks,
+            parent_barcode=storage.parent_barcode,
+            shelf_barcodes=shelf.barcodes,
         )
 
         # create (shelf) child locations
         shelf_storage_ids = post_child_location(
-            shelf.barcodes,
-            shelf.names,
+            barcodes=shelf.barcodes,
+            names=shelf.names,
             parent_storage_id=top_parent_storage_id,
             location_schema=parameters.shelf_schema,
             benchling_client=benchling_client
@@ -264,8 +269,8 @@ def main():
 
         # Create (rack/cane) child locations within shelves
         rack_storage_ids = post_child_location(
-            rack.barcodes,
-            rack.names,
+            barcodes=rack.barcodes,
+            names=rack.names,
             parent_storage_id=shelf_storage_ids,
             location_schema=parameters.rack_schema,
             benchling_client=benchling_client
@@ -277,8 +282,8 @@ def main():
             storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf_barcodes=0,
         )
         rack_storage_ids = post_child_location(
-            rack.barcodes,
-            rack.names,
+            barcodes=rack.barcodes,
+            names=rack.names,
             parent_storage_id=top_parent_storage_id,
             location_schema=parameters.rack_schema,
             benchling_client=benchling_client
@@ -289,8 +294,8 @@ def main():
         drawer = write_drawers_or_rows(
             rack.barcodes, parameters.drawer_prefix, parameters.drawer_in_full, storage.drawers)
         drawer_storage_ids = post_child_location(
-            drawer.barcodes,
-            drawer.names,
+            barcodes=drawer.barcodes,
+            names=drawer.names,
             parent_storage_id=rack_storage_ids,
             location_schema=parameters.drawer_schema,
             benchling_client=benchling_client
