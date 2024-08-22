@@ -1,12 +1,12 @@
 from typing import Any
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 import click
 from pydantic import BaseModel, field_validator
 
 
 class DevelopmentSettings(BaseModel):
-    tenant: Literal["orgdev"]
+    tenant: Literal["orgdev"] = "orgdev"
     freezer_schema: str = "dev_freezer_schema"
     shelf_schema: str = "dev_shelf_schema"
     rack_schema: str = "dev_rack_schema"
@@ -15,7 +15,7 @@ class DevelopmentSettings(BaseModel):
 
 
 class TestSettings(BaseModel):
-    tenant: Literal["orgtest"]
+    tenant: Literal["orgtest"] = "orgtest"
     freezer_schema: str = "test_freezer_schema"
     shelf_schema: str = "test_shelf_schema"
     rack_schema: str = "test_rack_schema"
@@ -24,7 +24,7 @@ class TestSettings(BaseModel):
 
 
 class ProductionSettings(BaseModel):
-    tenant: Literal["org"]
+    tenant: Literal["org"] = "org"
     freezer_schema: str = "prod_freezer_schema"
     shelf_schema: str = "prod_shelf_schema"
     rack_schema: str = "prod_rack_schema"
@@ -37,10 +37,10 @@ class StorageConfig(BaseModel):
     parent_name: str
     shelves: int
     rack_prefix: Literal["R", "C"]
-    rack_in_full: Literal["Racks", "Canes"]
+    rack_in_full: Literal["Rack", "Cane"]
     racks: int
-    drawer_prefix: Literal["D", "R"]
-    drawer_in_full: Literal["Drawers", "Rows"]
+    drawer_prefix: Optional[Literal["D", "R"]]
+    drawer_in_full: Optional[Literal["Drawer", "Row"]]
     drawers: int
     boxes: int
     box_dimension: int
@@ -77,12 +77,12 @@ def env_variables() -> Union[DevelopmentSettings, TestSettings, ProductionSettin
         )
 
     if instance == "dev":
-        return DevelopmentSettings
+        return DevelopmentSettings()
 
     elif instance == "test":
-        return TestSettings
+        return TestSettings()
 
-    return ProductionSettings
+    return ProductionSettings()
 
 
 @click.command()
@@ -147,30 +147,35 @@ def collect_input(racks_prompt, drawers_prompt) -> StorageConfig:
         # Because drawers/rows are optional, prompt for # of drawers is within if/else block
         drawer_or_row = drawers_prompt
 
-        if drawer_or_row == "Rows":
-            drawer_prefix = "R"
-            drawer_in_full = "Row"
-            drawers = click.prompt(
-                f"\nHow many {drawer_in_full}s per {rack_in_full}? ",
-                type=int,
-            )
-
-        elif drawer_or_row == "Drawers":
-            drawer_prefix = "D"
-            drawer_in_full = "Drawer"
-            drawers = click.prompt(
-                f"\nHow many {drawer_in_full}s per {rack_in_full}? ",
-                type=int,
-            )
-        else:
+        if drawer_or_row == "Neither":
             drawer_prefix = None
             drawer_in_full = None
             drawers = 0
 
-        boxes = click.prompt(
-            f"\nHow many boxes per {drawer_in_full}? ",
-            type=int,
-        )
+            boxes = click.prompt(
+                f"\nHow many boxes per {rack_in_full}? ",
+                type=int,
+            )
+
+        elif drawer_or_row == "Drawers" or drawer_or_row == "Rows":
+
+            if drawer_or_row == "Drawers":
+                drawer_prefix = "D"
+                drawer_in_full = "Drawer"
+        
+            else:
+                drawer_prefix = "R"
+                drawer_in_full = "Row"
+
+            drawers = click.prompt(
+                f"\nHow many {drawer_in_full}s per {rack_in_full}? ",
+                type=int,
+            )
+            boxes = click.prompt(
+                f"\nHow many boxes per {drawer_in_full}? ",
+                type=int,
+            )
+
         box_dimension = click.prompt(
             "\nSelect box dimensions:\n1. 9x9\n2. 10x10 ",
             type=click.IntRange(1, 2),
@@ -181,17 +186,17 @@ def collect_input(racks_prompt, drawers_prompt) -> StorageConfig:
         )
 
     return StorageConfig(
-        parent_barcode,
-        parent_name,
-        shelves,
-        rack_prefix,
-        rack_in_full,
-        racks,
-        drawer_prefix,
-        drawer_in_full,
-        drawers,
-        boxes,
-        box_dimension,
+        parent_barcode=parent_barcode,
+        parent_name=parent_name,
+        shelves=shelves,
+        rack_prefix=rack_prefix,
+        rack_in_full=rack_in_full,
+        racks=racks,
+        drawer_prefix=drawer_prefix,
+        drawer_in_full=drawer_in_full,
+        drawers=drawers,
+        boxes=boxes,
+        box_dimension=box_dimension,
     )
 
 

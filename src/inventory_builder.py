@@ -61,7 +61,7 @@ def write_shelves(shelves: int, parent_barcode: str) -> models.Location:
     return models.Location(barcodes=shelf_barcodes, names=shelf_names)
 
 
-def write_racks(
+def write_racks_or_canes(
     shelves: int,
     rack_prefix: str,
     rack_in_full: str,
@@ -249,7 +249,7 @@ def main():
     # Create shelves & racks within parent location
     if storage.shelves != 0:
         shelf = write_shelves(storage.shelves, storage.parent_barcode)
-        rack = write_racks(
+        rack = write_racks_or_canes(
             storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf.barcodes,
         )
 
@@ -273,7 +273,7 @@ def main():
 
     # Create racks within parent for LN2 configuration
     else:
-        rack = write_racks(
+        rack = write_racks_or_canes(
             storage.shelves, storage.rack_prefix, storage.rack_in_full, storage.racks, storage.parent_barcode, shelf_barcodes=0,
         )
         rack_storage_ids = post_child_location(
@@ -326,6 +326,6 @@ if __name__ == '__main__':
 
     storage = settings.collect_input.main(standalone_mode=False)
     box_schema = settings.box_schema_id(
-        storage.box_dimension, parameters.tenant)
+        n_dimension=storage.box_dimension, tenant=parameters.tenant)
 
     main()
