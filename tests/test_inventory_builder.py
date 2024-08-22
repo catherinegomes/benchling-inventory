@@ -19,8 +19,8 @@ def test_write_shelves():
 
 
 @pytest.mark.unittest
-def test_write_racks():
-    actual = inventory_builder.write_racks(shelves=4, rack_prefix="R", rack_in_full="Rack", racks=5, parent_barcode="EQS-1234", shelf_barcodes=["Name", "Shelf 1", "Shelf 2", "Shelf 3", "Shelf 4"])
+def test_write_racks_or_canes():
+    actual = inventory_builder.write_racks_or_canes(shelves=4, rack_prefix="R", rack_in_full="Rack", racks=5, parent_barcode="EQS-1234", shelf_barcodes=["Name", "Shelf 1", "Shelf 2", "Shelf 3", "Shelf 4"],mode="a")
     expected = models.Location(
         barcodes=[
             "Barcode",
