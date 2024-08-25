@@ -49,12 +49,12 @@ Using Drawers or Rows? (Drawers, Rows, Neither): Drawers
 
 Enter the asset tag :  EQS-1234
 
-Enter the Location name. This is the refrigerator, freezer or LN2 : Floor A - Blue LN2
+Enter the Location name. This is the refrigerator, freezer or LN2 : Floor A - Blue Freezer
 ```
 
 ```bash
 Asset tag: EQS-1234
-Location name: Floor A - Blue LN2
+Location name: Floor A - Blue Freezer
 
 Does this look correct? [y/N]
 ```
